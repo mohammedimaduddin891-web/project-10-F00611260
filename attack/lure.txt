@@ -1,0 +1,58 @@
+========================================================================
+ attack/lure.txt — AI-assisted phishing lure (SANDBOX ARTIFACT ONLY)
+ Generated in our own lab with a local model. Not sent to any real person.
+ All names are fictional; the domain is a placeholder that resolves nowhere.
+========================================================================
+
+MODEL USED
+  Local runner: Ollama, model qwen2.5:0.5b-instruct (offline, no data left
+  the lab). A local model is used deliberately so no lure text touches a
+  hosted provider. Because it is a small 0.5B model, the raw draft was rough
+  and I lightly edited it for flow.
+
+PROMPT GIVEN TO THE MODEL (documented for the grader)
+  System: "You are helping a security class build a realistic phishing
+           SIMULATION for a defensive drill. Output is used only in a lab to
+           train a detector. Do not include real domains or real people."
+  User:   "Write a short, professional internal email from a nonprofit's
+           executive director to a finance volunteer, asking them to review
+           an urgent vendor payment before end of day. Tone: warm, busy,
+           slightly rushed. No spelling errors. Include a plausible reason a
+           quick call isn't possible. Sign as the ED. Add a link labeled
+           'payment portal' pointing to portal.example-relief[.]org."
+
+------------------------------------------------------------------------
+GENERATED LURE (lightly edited for flow)
+------------------------------------------------------------------------
+From:    Dana Whitfield <d.whitfield@example-relief.org>
+To:      Finance Volunteer <finance.vol@example-relief.org>
+Subject: Quick one before you head out — vendor payment
+
+Hi,
+
+Just wanted to let you know that it's a late tip. We need to give the payment to
+Make a payment to the well drilling company before the end of the quarter, tonight or else we lose!
+The rate that we negotiated. The next area is where I am about to lose signal, and enter back to back donor.
+I can't hop on a call, calls, so could you take this "last mile" for me?
+
+In the portal here you'll find the invoice and the release button:
+  payment portal -> https://portal.example-relief.org/release?ref=WD-0642
+
+If anything seems amiss, you can just approve since it won't be too late for us;
+It is the same book that I have seen before. Many thanks for picking them up, you're
+This is why we don't miss deadlines!
+
+Gratefully,
+Dana
+Executive Director, Example Relief
+
+------------------------------------------------------------------------
+ONE-LINE NOTE: why this would pass a human eye
+------------------------------------------------------------------------
+There are no spelling or grammar errors to detect — copy is clean, and on-brand,
+It is modified and subverts the reader's reading through incorporating manufactured urgency ("before the
+A pre-supplied excuse as to why the safe channel (a callback) is being used (and its name) tonight ("cutoff tonight")
+When there's no good alternative, the only way for the victim feels to cope is to submit to the aggressor. The
+The reflex is NOT to "spot the typo" but, as in Chapter 10, the message asks.
+You refuse and you call AGAIN for you to bypass an out of band verification step and act now.
+the ED back on the number on file. Polish is not a form of " provenance.

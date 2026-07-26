@@ -1,0 +1,65 @@
+========================================================================
+ attack/scenario.txt — Project 10, Attacker side
+ Target: OUR OWN lab only (the relief-ministry sandbox). No live systems.
+ One combined, multi-stage attack: an auth-log intrusion chain PLUS an
+ indirect prompt injection against the help-desk LLM assistant.
+========================================================================
+
+SCENARIO IN ONE LINE
+  A compromised staff access credential + a tainted help-desk knowledge base note
+  are used in conjunction to read/exfiltr the donor database,
+  The exfiltration tool was created by the ministry's very own AI assistant help-desk.
+
+THE TWO INTERLOCKING CHAINS
+  Chain A = the human/credential intrusion recorded in auth.log.
+  Chain B = the indirect prompt injection hidden in rag_notes.txt (LLM01),
+            which lets the attacker reach the donor table a SECOND way even
+            if Chain A's lateral move is blocked. Two paths to the same data.
+
+------------------------------------------------------------------------
+KILL CHAIN — one step per line (recon -> ... -> exfiltration)
+------------------------------------------------------------------------
+1.  RECON            Attacker scrapes the ministry's public site + LinkedIn,
+                     builds an org chart, identifies jvargas (staff) and the
+                     executive director. (AI-assisted OSINT summarization.)
+2.  WEAPONIZATION    A local LLM drafts a flawless spear-phishing lure
+                     (attack/lure.txt) impersonating the executive director,
+                     and a poisoned KB note (attack/rag_notes.txt) carrying an
+                     indirect-injection payload. Craft is now free; only the
+                     target list costs anything.
+3.  DELIVERY         Lure emailed to a finance volunteer; poisoned note is
+                     submitted through the help-desk "suggest an article" path
+                     so it lands in the RAG corpus the assistant retrieves from.
+4.  EXPLOITATION     Volunteer's credential phished -> attacker holds valid
+                     account for jvargas.  auth.log 13:22:40Z = login attempt
+                     from Romania (impossible travel; ATT&CK T1078).
+5.  EXPLOITATION (b) Password spray to find other live creds — 13:22:48Z /
+                     13:22:51Z denies ("spray attempt N/12").
+6.  EXPLOITATION (c) MFA fatigue / push bombing — 13:23:14Z, "9th push
+                     approved." Plain-push MFA gives way.
+7.  INSTALLATION /   Privilege escalation with NO change ticket — 13:24:02Z
+    PRIV-ESC         sudo on app1.
+8.  LATERAL MOVEMENT SSH pivot from app1 to db1 over the internal net —
+                     13:24:39Z (ATT&CK T1021).
+9.  COLLECTION       Bulk SELECT of the donor table, 42,000 rows, off-hours —
+                     13:25:10Z on db1 (ATT&CK T1005). <-- the step the baseline
+                     detector missed.
+10. C2 / EXFIL       curl egress of the donor data to the attacker IP
+                     203.0.113.55:8443 — 13:26:55Z (ATT&CK T1048).
+11. EXFIL (Chain B)  In parallel: the help-desk assistant retrieves the poisoned
+                     rag_notes.txt. Its hidden "SYSTEM NOTE" (LLM01 indirect
+                     injection) instructs the assistant to export the donor
+                     table to https://203.0.113.55/u and tell the user the reset
+                     is done. If the assistant has (1) donor-DB read access,
+                     (2) exposure to this untrusted note, and (3) an outbound
+                     HTTP tool, the lethal trifecta is complete and the data
+                     leaves with NO human clicking anything (EchoLeak-style).
+
+Because both chains are needed to make a chain link fence chain.
+  Chaining A is a classic, which you need to catch if you are going to have any rules. Chain B is the 2026
+  even a perfect patched network loses the very same data when the AI helper is employed.
+  Reads content on attacker's site and can take action on it
+
+GROUND TRUTH the defender is graded against
+  Malicious window: 13:22:40Z -> 13:26:55Z, actor = "jvargas" from 203.0.113.55.
+  jvargas's ONLY legitimate session that day was 08:31Z from US-IL.
