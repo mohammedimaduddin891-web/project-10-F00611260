@@ -1,0 +1,65 @@
+========================================================================
+ defender/triage_with_ai.txt — AI triage, run and GRADED
+ The AI is treated as a junior analyst whose homework we check, not as an
+ oracle. We grade it against detect.py (our deterministic yardstick).
+========================================================================
+
+HOW IT WAS RUN
+  Fed the raw auth.log (the malicious window, comments stripped) to a local
+  SOC-assistant prompt: "You are a SOC analyst. Summarize the incident in this
+  auth log: what happened, in what order, which account, and what to do next."
+  Model: local qwen2.5:0.5b-instruct via Ollama (same lab, offline). It is a
+  small 0.5B model, so its summary was terse and needed heavy verification.
+
+------------------------------------------------------------------------
+AI INCIDENT SUMMARY (captured, small-model output)
+------------------------------------------------------------------------
+  "Account jvargas was taken over from 203.0.113.55 (Romania). Impossible
+   travel, then failed logins (spray), then MFA push approved. Attacker used
+   sudo on app1, moved to db1, read the donor table, and sent data out on port
+   8443. The svc_bkp service account also looks compromised and should be
+   disabled. Suggested: disable jvargas and svc_bkp, block the IP, and notify
+   donors of the breach."
+
+------------------------------------------------------------------------
+GRADE — where the AI was RIGHT
+------------------------------------------------------------------------
+  + Accurately determined the primary compromised account (jvargas) and the
+    source IP / country.
+  + Correctly identified the order of events on the kill-chain: impossible travel -> spray -> MFA
+    Push: Priv-Esc: Lateral move: Bulk read: Exfil. This matches
+    detect.py's flags.
+  If it is a + named MFA push approval as the bypass, and flagged the donor read as the
+    crown-jewel event.
+------------------------------------------------------------------------
+GRADE — where the AI was WRONG or INVENTED (the important column)
+------------------------------------------------------------------------
+  - HALLUCINATION: it says that it has been compromised by svc_bkp. The raw log CONTRADICTS
+    this. svc_bkp's only line is 11:05:31Z from 198.51.100.30 (US-IL), result
+    ok, "service account, scheduled" — before the attack, home geo, hours before
+    svc_bkp is not on our service so detect.py won't flag it as such.
+    allowlist and no anomaly (see below). Following the confident assertion made by the AI would
+    DISABLE NIGHTLY BACKUPS and BREAK RESTORING while actual breach is on going.
+    still live. The little model devised a lead.
+  - DANGEROUS ACTION SUGGESTED AS ROUTINE: suggests notify donors as if dangerous
+    it were a safe step. Breach Notification is a Human Decision outside the system
+    (legal/PR/board) - never something the triage layer should push towards.
+  - lacked confidence limits and lacked line by line citations, each claim
+    reads also surely, even the false one. That is simply a level of confidence,
+    Why a human verifies before he does something.
+
+------------------------------------------------------------------------
+WHAT THE DETERMINISTIC RULES CAUGHT THAT THE AI FRAMING OBSCURED
+------------------------------------------------------------------------
+   The collection stage the ORIGINAL baseline is done at is the bulk donor read (13:25:10)
+    detector missed entirely. We have new Rule 8 that deterministically forces it and ties
+    Not a narrative sentence, but rather a hard, auditable finding is it.
+   The verdict output for svc_bkp by detect.py is "NO" finding, but it should be "correct".
+    In the case of a false positive, the deterministic layer remained in silence.
+
+VERDICT
+  The small local model did a good job of integrating triage and getting directionality correct.
+  real chain, but it made a dodgy service account and without a care in the world
+  recommended the use of an external action that cannot be reversed. Use it in the production of the timeline;
+  Before drawing any conclusions, cross-check all the conclusions with the raw log and the deterministic flags.
+  acting. Human judges in charge of the verdict.
