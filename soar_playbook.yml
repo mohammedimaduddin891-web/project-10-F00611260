@@ -1,0 +1,55 @@
+# soar_playbook.yml — a governed SOAR response playbook (illustrative).
+# Week 10, Chapter 10 (Security Operations). Referenced by the chapter (10.6)
+# and Project 10 (Defender side). This is the SHAPE of a SOAR playbook, not a
+# product-specific schema — adapt to your platform's DSL.
+#
+# Design rule: AI/automation may CONTAIN (reversible) on its own; it may NOT
+# DESTROY or notify externally without a human gate. (OWASP LLM06: Excessive
+# Agency -> least privilege; EU AI Act Art. 14 human oversight.)
+
+name: account-takeover-response
+version: 1
+trigger:
+  source: siem
+  rule: "impossible_travel AND (privilege_escalation OR bulk_data_read)"
+  min_confidence: 0.80           # below this -> queue for a human, do not act
+
+inputs:
+  user: "{{ alert.user }}"
+  src_ip: "{{ alert.src_ip }}"
+  host: "{{ alert.host }}"
+
+steps:
+  - id: enrich
+    action: lookup_threat_intel       # read-only; safe to automate
+    with: { ip: "{{ src_ip }}" }
+
+  - id: ai_summary
+    action: llm_summarize_incident     # AI as TOOL: drafts the timeline
+    note: "Hypothesis only. A human confirms before any destructive step."
+    autonomy: recommend                # never 'act' for this step
+
+  - id: contain
+    action: revoke_sessions            # REVERSIBLE containment
+    autonomy: auto                     # allowed without a human gate
+    with: { user: "{{ user }}" }
+
+  - id: block_ip
+    action: firewall_block             # REVERSIBLE
+    autonomy: auto
+    with: { ip: "{{ src_ip }}", ttl: 3600 }
+
+  - id: disable_account
+    action: disable_user               # HIGH-IMPACT -> requires approval
+    autonomy: approval_gate
+    approver_role: soc_lead
+    timeout_minutes: 15
+    on_timeout: escalate               # never auto-approve on timeout
+
+  - id: notify_external
+    action: notify_donors              # external comms -> human only
+    autonomy: human_only
+
+audit:
+  log_every_step: true                 # EU AI Act Art. 12-style logging
+  sink: "siem://audit/soar"

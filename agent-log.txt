@@ -1,0 +1,29 @@
+# Agent Log — Project 10
+
+## Task: extend triage_logins.py with new detection rules
+- **Delegated:** "Add rules that catch attack steps the five baseline rules miss,
+  and flag the full chain in auth.log."
+- **Agent did:** wrote Rules 6-9 (impossible travel, MFA fatigue, bulk data read,
+  lateral movement) and rewrote Rule 1 as a windowed spray detector.
+- **Where it went wrong:** the bulk-read rule used a per-QUERY 1000-row threshold;
+  a split read of 999-row batches would slip under it. The windowed spray rule
+  can also be evaded by a slow spray spread past the window.
+- **Where I intervened:** The following files as infected: all files from this directory are considered infected by detect.py at auth.log.
+  seven stages, ran the baseline to prove it missed the 13:25:10 donor read that
+  That's when I realized that I needed to make some compromises, and did so, playing with my new Rule 8 catches while being honest with myself about the compromises that I had noted.
+  The rules are very strict.
+
+## Task: run and grade the AI triage
+- **Delegated:** "Summarize the incident in auth.log as a SOC analyst."
+- **Agent did:** a small local model (qwen2.5:0.5b-instruct) produced a terse
+  kill-chain summary.
+- **Where it went wrong:** it invented a compromised svc_bkp account (the raw log
+  contradicts this) and recommended notifying donors as if routine.
+- **Where I intervened:** Restructured it to generate data that could be compared with detect.py, mentioned the svc_bkp,
+  You can also set up a flagged donor, hallucination (which will disrupt nightly backups) and a backup schedule.
+  Notification as a human only call. See defender/triage_with_ai.txt.
+
+## Decisions the agent did NOT make (and could not)
+I will never automate the one thing I need to do for the donor — let them know if there's been a breach.
+  Human Call regarding accountability will be to real humans, not the agent.
+  I wrote this line, the agent just wrote the script.

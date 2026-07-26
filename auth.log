@@ -1,0 +1,25 @@
+# Sample auth log slice — Week 10, Chapter 10 (Security Operations)
+# Format: timestamp host service user srcip geo result note
+# Mixed normal traffic + one real attack chain. Used by exercises.md Rep 2 and Project 10.
+# Times are UTC. The grader's "ground truth" is in NOTES at the bottom — do not peek until you have triaged.
+
+2026-06-15T08:02:11Z gw01 sshd  rkern   203.0.113.40  US-IL  ok      routine morning login
+2026-06-15T08:14:55Z gw01 entra  msmith  198.51.100.7  US-IL  ok      MFA passkey
+2026-06-15T08:31:09Z gw01 entra  jvargas 198.51.100.9  US-IL  ok      MFA passkey
+2026-06-15T09:47:02Z app1 sudo   rkern   203.0.113.40  US-IL  ok      deploy window, approved
+2026-06-15T11:05:31Z entra entra  svc_bkp 198.51.100.30 US-IL  ok      service account, scheduled
+2026-06-15T13:22:40Z gw01 entra  jvargas 203.0.113.55  RO     deny    impossible travel: 198.51.100.9->RO in 4h
+2026-06-15T13:22:48Z gw01 entra  jvargas 203.0.113.55  RO     deny    password spray attempt 1/12
+2026-06-15T13:22:51Z gw01 entra  jvargas 203.0.113.55  RO     deny    password spray attempt 5/12
+2026-06-15T13:23:14Z gw01 entra  jvargas 203.0.113.55  RO     ok      MFA fatigue: 9th push approved
+2026-06-15T13:24:02Z app1 sudo   jvargas 203.0.113.55  RO     ok      privilege escalation, NO change ticket
+2026-06-15T13:24:39Z app1 sshd   jvargas 203.0.113.55  RO     ok      lateral move to db1 over internal net
+2026-06-15T13:25:10Z db1  pgsql  jvargas 10.0.4.12     INT    ok      bulk SELECT donors (42k rows) off-hours
+2026-06-15T13:26:55Z db1  curl   jvargas 10.0.4.12     INT    ok      egress to 203.0.113.55:8443 (exfil)
+2026-06-15T14:10:00Z app1 sudo   rkern   203.0.113.40  US-IL  ok      routine, approved
+2026-06-15T16:48:21Z gw01 entra  msmith  198.51.100.7  US-IL  ok      MFA passkey
+#
+# NOTES (ground truth):
+#   Lines 13:22:40 -> 13:26:55 are the attack chain: impossible travel -> spray ->
+#   MFA fatigue -> priv-esc with no ticket -> lateral move -> bulk read -> exfil.
+#   jvargas's legitimate session was 08:31 from US-IL. The 13:22 session is the adversary.
